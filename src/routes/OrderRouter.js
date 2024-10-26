@@ -1,25 +1,25 @@
 import express from "express";
-import cartController from "../controllers/cart.js";
-import { authUserMiddleWare } from "../middleware/authMiddleware.js"; // Assuming you have authentication middleware
+import orderController from "../controllers/order.js";
+import {
+  authAdminMiddleWare,
+  authUserMiddleWare,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
-router.use(authUserMiddleWare);
+// User routes
+router.post("/", authUserMiddleWare, orderController.createOrder);
+router.get("/my-orders", authUserMiddleWare, orderController.getUserOrders);
+router.get("/:orderId", authUserMiddleWare, orderController.getOrderById);
 
-// Get the current user's cart
-router.get("/", cartController.getCart);
-
-// Add a product to the cart
-router.post("/", cartController.addToCart);
-
-// Update the quantity of a product in the cart
-router.put("/", cartController.updateCartItem);
-
-// Remove a product from the cart
-router.delete("/:productId", cartController.removeFromCart);
-
-// Clear the entire cart
-router.delete("/clear", cartController.clearCart);
+// Admin routes
+router.get("/", authAdminMiddleWare, orderController.getAllOrders);
+router.get("/stats", authAdminMiddleWare, orderController.getOrderStats);
+//Cập nhật trạng thái đơn hàng
+router.patch(
+  "/:orderId/status",
+  authAdminMiddleWare,
+  orderController.updateOrderStatus
+);
 
 export default router;
