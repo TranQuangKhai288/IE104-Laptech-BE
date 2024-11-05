@@ -45,14 +45,14 @@ export const createBulkProducts = async (products) => {
   }
 };
 
-export const getProducts = async (filters = {}) => {
+export const getProducts = async (filters = {}, page = 1, limit = 10) => {
   try {
     let query = {};
 
     // Apply filters
     if (filters.category) query.category = filters.category;
     if (filters.brand) query.brand = filters.brand;
-    if (filters.price) query.price = filters.price;
+    if (filters.sort) query.sort = filters.sort;
 
     // Handle text search
     if (filters.search) {
@@ -63,12 +63,20 @@ export const getProducts = async (filters = {}) => {
       ];
     }
 
-    const products = await Product.find(query).populate({
-      path: "reviews.userId",
-      select: "name email", // Assuming these fields exist in User model
-    });
+    const skip = (page - 1) * limit;
+    const totalProducts = await Product.countDocuments(query);
+    const products = await Product.find(query)
+      .populate({
+        path: "reviews.userId",
+        select: "name email", // Assuming these fields exist in User model
+      })
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return products;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    return { data: products, count: totalProducts, totalPages };
   } catch (error) {
     console.error("Service Error - Get Products:", error);
     throw error;

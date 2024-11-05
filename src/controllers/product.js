@@ -60,10 +60,18 @@ const createBulkProducts = async (req, res) => {
     });
   }
 };
-
 const getProducts = async (req, res) => {
   try {
-    const { category, brand, minPrice, maxPrice, search } = req.query;
+    const {
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      search,
+      sort,
+      page = 1,
+      limit = 10,
+    } = req.query;
     const filters = {};
 
     if (category) filters.category = category;
@@ -74,11 +82,17 @@ const getProducts = async (req, res) => {
       if (maxPrice) filters.price.$lte = Number(maxPrice);
     }
     if (search) filters.search = search;
+    if (sort) filters.sort = sort;
 
-    const products = await ProductService.getProducts(filters);
+    const products = await ProductService.getProducts(filters, page, limit);
     return res
       .status(200)
-      .json({ status: "OK", data: products, count: products.length });
+      .json({
+        status: "OK",
+        data: products.data,
+        count: products.count,
+        totalPages: products.totalPages,
+      });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
