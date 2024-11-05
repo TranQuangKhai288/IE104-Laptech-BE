@@ -12,23 +12,43 @@ const productSchema = new Schema(
       required: true,
     },
     brand: { type: String, required: true },
-    price: { type: Number, required: true },
+    price: { type: Number, required: true }, // Original or base price
+    starting_price: { type: String }, // Price after sale, as string for format flexibility
+    sale_percentage: { type: Number, default: 0 }, // Sale discount percentage
     stock: { type: Number, required: true },
     images: [{ type: String, required: true }], // Array of image URLs
-    specifications: {
-      cpu: { type: String },
-      ram: { type: String },
-      storage: { type: String },
-      screen: { type: String },
-      gpu: { type: String },
-      battery: { type: String },
-      os: { type: String }, // Operating system
-      weight: { type: String },
-      dimensions: { type: String },
-      color: { type: String },
-      ports: { type: [String] }, // e.g., ["USB-C", "HDMI", "Ethernet"]
-      additionalFeatures: { type: [String] }, // e.g., ["Fingerprint reader", "Backlit keyboard"]
-    },
+    colors: [
+      {
+        title: { type: String, required: true }, // Color name
+        hex: { type: String, required: true }, // Hex code for the color
+      },
+    ],
+    specifications: [
+      {
+        type: {
+          type: String,
+          required: true,
+          enum: [
+            "CPU",
+            "RAM",
+            "Storage",
+            "Display",
+            "Battery",
+            "Camera",
+            "OS",
+            "GPU",
+            "Connectivity",
+            "Ports",
+            "Audio",
+            "Sensors",
+            "Features",
+          ],
+        }, // e.g., "CPU", "RAM", etc.
+        title: { type: String, required: true }, // Display title for the spec
+        description: { type: String, required: true }, // Details of the spec
+      },
+    ],
+    gift_value: { type: String, default: "" }, // Gift value if applicable
     reviews: [
       {
         userId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -43,7 +63,8 @@ const productSchema = new Schema(
   { timestamps: true }
 );
 
-productSchema.index({ name: "text", brand: "text", category: "text" }); // For search functionality
+// For search functionality
+productSchema.index({ name: "text", brand: "text", category: "text" });
 
 const Product = mongoose.model("Product", productSchema);
 

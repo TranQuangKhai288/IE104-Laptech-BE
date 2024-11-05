@@ -1,76 +1,22 @@
 import * as ProductService from "../services/product.js";
+import { validateProductInput, validateObjectId } from "../utils/validation.js";
 
 const createProduct = async (req, res) => {
   try {
     // Validate required fields
-    const { name, description, category, brand, price, stock, images } =
-      req.body;
-
-    if (
-      !name ||
-      !description ||
-      !category ||
-      !brand ||
-      !price ||
-      !stock ||
-      !images
-    ) {
+    const validationError = validateProductInput(req.body);
+    if (validationError) {
       return res.status(400).json({
         status: "ERR",
-        message: "Missing required fields",
-        details: {
-          name: !name ? "Name is required" : null,
-          description: !description ? "Description is required" : null,
-          category: !category ? "Category is required" : null,
-          brand: !brand ? "Brand is required" : null,
-          price: !price ? "Price is required" : null,
-          stock: !stock ? "Stock is required" : null,
-          images: !images ? "At least one image is required" : null,
-        },
-      });
-    }
-
-    // Validate category
-    const validCategories = [
-      "laptop",
-      "pc",
-      "phone",
-      "accessory",
-      "tablet",
-      "other",
-    ];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "Invalid category",
-        details: `Category must be one of: ${validCategories.join(", ")}`,
-      });
-    }
-
-    // Validate price and stock
-    if (price < 0 || !Number.isInteger(price)) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "Invalid price",
-        details: "Price must be a positive number",
-      });
-    }
-
-    if (stock < 0 || !Number.isInteger(stock)) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "Invalid stock",
-        details: "Stock must be a non-negative integer",
+        message: validationError.message,
+        details: validationError.details,
       });
     }
 
     const product = await ProductService.createProduct(req.body);
 
     if (typeof product === "string") {
-      return res.status(400).json({
-        status: "ERR",
-        message: product,
-      });
+      return res.status(400).json({ status: "ERR", message: product });
     }
 
     return res.status(201).json({
@@ -100,14 +46,6 @@ const createBulkProducts = async (req, res) => {
     }
 
     const createdProducts = await ProductService.createBulkProducts(products);
-
-    if (createdProducts instanceof Error) {
-      return res.status(400).json({
-        status: "ERR",
-        message: createdProducts.message,
-      });
-    }
-
     return res.status(201).json({
       status: "OK",
       message: "Products created successfully",
@@ -125,7 +63,6 @@ const createBulkProducts = async (req, res) => {
 
 const getProducts = async (req, res) => {
   try {
-    // Add query parameters for filtering
     const { category, brand, minPrice, maxPrice, search } = req.query;
     const filters = {};
 
@@ -139,11 +76,9 @@ const getProducts = async (req, res) => {
     if (search) filters.search = search;
 
     const products = await ProductService.getProducts(filters);
-    return res.status(200).json({
-      status: "OK",
-      data: products,
-      count: products.length,
-    });
+    return res
+      .status(200)
+      .json({ status: "OK", data: products, count: products.length });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
@@ -158,26 +93,19 @@ const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-    //   return res.status(400).json({
-    //     status: "ERR",
-    //     message: "Invalid product ID format",
-    //   });
-    // }
+    if (!validateObjectId(id)) {
+      return res
+        .status(400)
+        .json({ status: "ERR", message: "Invalid product ID format" });
+    }
 
     const product = await ProductService.getProductById(id);
 
     if (typeof product === "string") {
-      return res.status(404).json({
-        status: "ERR",
-        message: product,
-      });
+      return res.status(404).json({ status: "ERR", message: product });
     }
 
-    return res.status(200).json({
-      status: "OK",
-      data: product,
-    });
+    return res.status(200).json({ status: "OK", data: product });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
@@ -192,38 +120,25 @@ const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-    //   return res.status(400).json({
-    //     status: "ERR",
-    //     message: "Invalid product ID format",
-    //   });
-    // }
-
-    // Validate update data
-    const { price, stock } = req.body;
-    if (price !== undefined && (price < 0 || !Number.isInteger(price))) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "Invalid price",
-        details: "Price must be a positive number",
-      });
+    if (!validateObjectId(id)) {
+      return res
+        .status(400)
+        .json({ status: "ERR", message: "Invalid product ID format" });
     }
 
-    if (stock !== undefined && (stock < 0 || !Number.isInteger(stock))) {
+    const validationError = validateProductInput(req.body, true); // 'true' for update mode (allows partial data)
+    if (validationError) {
       return res.status(400).json({
         status: "ERR",
-        message: "Invalid stock",
-        details: "Stock must be a non-negative integer",
+        message: validationError.message,
+        details: validationError.details,
       });
     }
 
     const product = await ProductService.updateProduct(id, req.body);
 
     if (typeof product === "string") {
-      return res.status(404).json({
-        status: "ERR",
-        message: product,
-      });
+      return res.status(404).json({ status: "ERR", message: product });
     }
 
     return res.status(200).json({
@@ -245,26 +160,21 @@ const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({
-        status: "ERR",
-        message: "Invalid product ID format",
-      });
+    if (!validateObjectId(id)) {
+      return res
+        .status(400)
+        .json({ status: "ERR", message: "Invalid product ID format" });
     }
 
     const result = await ProductService.deleteProduct(id);
 
     if (typeof result === "string") {
-      return res.status(404).json({
-        status: "ERR",
-        message: result,
-      });
+      return res.status(404).json({ status: "ERR", message: result });
     }
 
-    return res.status(200).json({
-      status: "OK",
-      message: "Product deleted successfully",
-    });
+    return res
+      .status(200)
+      .json({ status: "OK", message: "Product deleted successfully" });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
