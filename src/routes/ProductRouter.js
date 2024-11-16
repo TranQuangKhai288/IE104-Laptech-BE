@@ -12,6 +12,8 @@ router.post("/bulk", productController.createBulkProducts);
 // Get all products
 router.get("/", productController.getProducts);
 
+router.get("/category/", productController.getAllCategory);
+
 // Get a product by ID
 router.get("/:id", productController.getProductById);
 

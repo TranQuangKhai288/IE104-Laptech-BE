@@ -3,13 +3,22 @@ import { validateProductInput, validateObjectId } from "../utils/validation.js";
 
 const createProduct = async (req, res) => {
   try {
-    // Validate required fields
+    // Validate required fields including subCategory for laptops
     const validationError = validateProductInput(req.body);
     if (validationError) {
       return res.status(400).json({
         status: "ERR",
         message: validationError.message,
         details: validationError.details,
+      });
+    }
+
+    // Additional validation for subCategory
+    if (req.body.category === "laptop" && !req.body.subCategory) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "Validation error",
+        details: "subCategory is required for laptop category",
       });
     }
 
@@ -45,6 +54,24 @@ const createBulkProducts = async (req, res) => {
       });
     }
 
+    // Validate subCategory for all laptop products in the array
+    const validationErrors = products
+      .map((product, index) => {
+        if (product.category === "laptop" && !product.subCategory) {
+          return `Product at index ${index}: subCategory is required for laptop category`;
+        }
+        return null;
+      })
+      .filter((error) => error !== null);
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "Validation error",
+        details: validationErrors,
+      });
+    }
+
     const createdProducts = await ProductService.createBulkProducts(products);
     return res.status(201).json({
       status: "OK",
@@ -64,6 +91,8 @@ const getProducts = async (req, res) => {
   try {
     const {
       category,
+      subCategory,
+      isFeatured,
       brand,
       minPrice,
       maxPrice,
@@ -72,9 +101,11 @@ const getProducts = async (req, res) => {
       page = 1,
       limit = 10,
     } = req.query;
+
     const filters = {};
 
     if (category) filters.category = category;
+    if (subCategory) filters.subCategory = subCategory;
     if (brand) filters.brand = brand;
     if (minPrice || maxPrice) {
       filters.price = {};
@@ -83,16 +114,15 @@ const getProducts = async (req, res) => {
     }
     if (search) filters.search = search;
     if (sort) filters.sort = sort;
+    if (isFeatured) filters.isFeatured = isFeatured;
 
     const products = await ProductService.getProducts(filters, page, limit);
-    return res
-      .status(200)
-      .json({
-        status: "OK",
-        data: products.data,
-        count: products.count,
-        totalPages: products.totalPages,
-      });
+    return res.status(200).json({
+      status: "OK",
+      data: products.data,
+      count: products.count,
+      totalPages: products.totalPages,
+    });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
@@ -120,6 +150,20 @@ const getProductById = async (req, res) => {
     }
 
     return res.status(200).json({ status: "OK", data: product });
+  } catch (error) {
+    console.error("Controller Error:", error);
+    return res.status(500).json({
+      status: "ERR",
+      message: "Failed to fetch product",
+      details: error.message,
+    });
+  }
+};
+
+const getAllCategory = async (req, res) => {
+  try {
+    const categories = await ProductService.getAllCategory();
+    return res.status(200).json({ status: "OK", data: categories });
   } catch (error) {
     console.error("Controller Error:", error);
     return res.status(500).json({
@@ -204,6 +248,7 @@ export default {
   createBulkProducts,
   getProducts,
   getProductById,
+  getAllCategory,
   updateProduct,
   deleteProduct,
 };

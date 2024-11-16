@@ -11,6 +11,22 @@ const productSchema = new Schema(
       enum: ["laptop", "pc", "phone", "accessory", "tablet", "other"],
       required: true,
     },
+    subCategory: {
+      type: String,
+      enum: [
+        "gaming",
+        "office",
+        "ultra-thin",
+        "2-in-1",
+        "workstation",
+        "budget",
+        "student",
+        "business",
+      ],
+      required: function () {
+        return this.category === "laptop";
+      },
+    },
     brand: { type: String, required: true },
     price: { type: Number, required: true }, // Original or base price
     starting_price: { type: String }, // Price after sale, as string for format flexibility
