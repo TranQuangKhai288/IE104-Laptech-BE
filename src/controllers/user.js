@@ -57,57 +57,76 @@ const createUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    console.log("input login", req.body);
     const { email, password } = req.body;
-    const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/;
 
+    // 1. Input Validation
     if (!email || !password) {
       return res.status(400).json({
         status: "ERR",
-        message: "The input is required",
+        message: "Email and password are required",
       });
     }
 
-    if (!reg.test(email)) {
+    // Email validation - using more comprehensive regex
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
       return res.status(400).json({
         status: "ERR",
-        message: "The input is email",
+        message: "Invalid email format",
       });
     }
 
-    const response = await userService.loginUser(req.body);
-    if (response === "User does not exist") {
-      return res.status(400).json({
+    // 2. Password validation (thêm nếu cần)
+    // if (password.length < 6) {
+    //   return res.status(400).json({
+    //     status: "ERR",
+    //     message: "Password must be at least 6 characters long",
+    //   });
+    // }
+
+    // 3. Sanitize input
+    const sanitizedEmail = email.toLowerCase().trim();
+
+    // 4. Call service with sanitized input
+    const response = await userService.loginUser({
+      email: sanitizedEmail,
+      password,
+    });
+
+    // 5. Handle service responses
+    if (typeof response === "string") {
+      return res.status(401).json({
         status: "ERR",
-        message: "User does not exist",
+        message: response,
       });
     }
 
-    if (response === "The password is incorrect") {
-      return res.status(400).json({
-        status: "ERR",
-        message: "The password is incorrect",
-      });
-    }
-
+    // 6. Destructure response
     const { data, access_token, refresh_token } = response;
+
+    // 7. Set refresh token in cookie
     res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production", // Chỉ true trong production
       sameSite: "strict",
       path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // 8. Return response without refresh token in body
     return res.status(200).json({
       status: "OK",
-      message: "LOGIN SUCCESS",
+      message: "LOGIN_SUCCESS",
       data,
       access_token,
-      refresh_token,
+      // Không nên gửi refresh_token trong response body
     });
   } catch (e) {
+    console.error("Login error:", e);
     return res.status(500).json({
-      message: e.message,
+      status: "ERR",
+      message: "Internal server error",
+      // Không nên gửi e.message trong production vì có thể lộ thông tin nhạy cảm
     });
   }
 };
@@ -248,6 +267,7 @@ const getDetailsUser = async (req, res) => {
 const refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refresh_token;
+    console.log("req.cookies", req.cookies);
     if (!token) {
       return res.status(400).json({
         status: "ERR",

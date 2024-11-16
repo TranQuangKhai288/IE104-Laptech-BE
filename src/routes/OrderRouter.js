@@ -13,8 +13,12 @@ router.get("/my-orders", authUserMiddleWare, orderController.getUserOrders);
 router.get("/:orderId", authUserMiddleWare, orderController.getOrderById);
 
 // Admin routes
-router.get("/", authAdminMiddleWare, orderController.getAllOrders);
-router.get("/stats", authAdminMiddleWare, orderController.getOrderStats);
+router.get(
+  "/",
+  //  authAdminMiddleWare,
+  orderController.getAllOrders
+);
+router.get("/status", authAdminMiddleWare, orderController.getOrderStats);
 //Cập nhật trạng thái đơn hàng
 router.patch(
   "/:orderId/status",

@@ -4,14 +4,14 @@ import User from "../models/user.js";
 
 dotenv.config();
 
-export const authAdminMiddleWare = (req, res, next) => {
+export const authAdminMiddleWare = async (req, res, next) => {
   const tokenHeader = req.headers.authorization;
+  console.log("tokenHeader Admin", tokenHeader);
 
-  // Check if the token header exists and is in the expected format
-  if (!tokenHeader || !tokenHeader.startsWith("Bearer ")) {
-    console.log("tokenHeader", tokenHeader);
+  // If there is no token
+  if (!tokenHeader) {
     return res.status(401).json({
-      message: "Authentication failed",
+      message: "Authentication failed - No token",
       status: "ERROR",
     });
   }
@@ -19,14 +19,19 @@ export const authAdminMiddleWare = (req, res, next) => {
   // Extract the token
   const token = tokenHeader.split(" ")[1];
 
-  jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
+  jwt.verify(token, process.env.ACCESS_TOKEN, async (err, user) => {
     if (err) {
       return res.status(401).json({
-        message: "Authentication failed",
+        message: err.message,
         status: "ERROR",
       });
     }
     if (user?.isAdmin) {
+      const setUser = await User.findOne({ _id: user.id });
+      if (!setUser) {
+        throw new Error("User not found");
+      }
+      req.user = setUser; // Set req.user
       next();
     } else {
       return res.status(403).json({

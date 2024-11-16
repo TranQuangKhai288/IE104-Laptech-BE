@@ -2,37 +2,74 @@ import Order from "../models/order.js";
 import Product from "../models/product.js";
 
 export const createOrder = async (orderData, userId) => {
+  // Thêm userId parameter
   try {
-    const { items, shippingAddress, paymentMethod, notes, couponCode } =
-      orderData;
-
-    // Calculate prices
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const shippingFee = 0; // TODO: Calculate based on address and weight
-    const discount = 0; // TODO: Apply coupon logic
-    const total = subtotal + shippingFee - discount;
-
-    // Create order with calculated values
-    const order = await Order.create({
-      userId,
-      items,
-      shippingAddress,
-      paymentMethod,
-      notes,
-      couponCode,
-      subtotal,
-      shippingFee,
-      discount,
-      total,
+    // Validate và lấy thông tin products
+    const productPromises = orderData.items.map(async (item) => {
+      const product = await Product.findById(item.productId).lean();
+      if (!product) {
+        throw new Error(`Product not found with id: ${item.productId}`);
+      }
+      return {
+        product,
+        quantity: item.quantity,
+      };
     });
 
-    return order;
+    const productsWithQuantity = await Promise.all(productPromises);
+
+    // Tính toán subtotal và total
+    const subtotal = productsWithQuantity.reduce(
+      (sum, { product, quantity }) => {
+        return sum + product.price * quantity;
+      },
+      0
+    );
+
+    // Tính total (có thể thêm logic xử lý mã giảm giá và phí vận chuyển ở đây)
+    let total = subtotal;
+
+    // Nếu có coupon, xử lý giảm giá
+    if (orderData.couponCode) {
+      // Thêm logic xử lý coupon ở đây
+      // Ví dụ: total = subtotal * (1 - discountPercentage);
+    }
+
+    // Tạo order mới với đầy đủ thông tin
+    const order = new Order({
+      userId: userId, // Từ parameter
+      items: productsWithQuantity.map(({ product, quantity }) => ({
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        images: product.images,
+        specifications: {
+          cpu:
+            product.specifications.find((spec) => spec.type === "CPU")
+              ?.description || "",
+          ram:
+            product.specifications.find((spec) => spec.type === "RAM")
+              ?.description || "",
+          storage:
+            product.specifications.find((spec) => spec.type === "Storage")
+              ?.description || "",
+          color: "", // Có thể thêm logic để lấy màu từ product
+        },
+      })),
+      shippingAddress: orderData.shippingAddress,
+      paymentMethod: orderData.paymentMethod,
+      notes: orderData.notes,
+      couponCode: orderData.couponCode,
+      subtotal: subtotal,
+      total: total,
+      status: "pending", // Thêm status mặc định nếu cần
+    });
+
+    return await order.save();
   } catch (error) {
-    console.error("Error creating order:", error);
-    throw new Error("Error creating order");
+    console.error("Service Error - Create Order:", error);
+    throw error;
   }
 };
 
@@ -81,8 +118,9 @@ export const updateOrderStatus = async (orderId, { status, note }, userId) => {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("Order not found");
 
-    await order.addStatusHistory(status, note, userId);
+    console.log("Updating order status:", status, note, userId);
 
+    await order.addStatusHistory(status, note, userId);
     // Additional actions based on status
     switch (status) {
       case "cancelled":
@@ -137,7 +175,7 @@ export const getAllOrders = async (query = {}) => {
     }
 
     const orders = await Order.find(findQuery)
-      .populate("userId", "name email")
+      .populate("userId", "_id avatar name email phone")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);

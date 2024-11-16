@@ -109,6 +109,9 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    console.log("here");
+    console.log(req.user._id, "req.user._id");
+
     const order = await OrderService.updateOrderStatus(
       req.params.orderId,
       { status, note },

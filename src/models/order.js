@@ -2,28 +2,12 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-// Schema for each product in the order
 const orderItemSchema = new Schema({
-  productId: {
-    type: Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  image: String,
-  // Store product specifications at the time of order
+  productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  quantity: { type: Number, required: true },
+  images: [{ type: String, required: true }],
   specifications: {
     cpu: String,
     ram: String,
