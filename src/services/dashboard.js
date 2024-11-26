@@ -33,7 +33,7 @@ export const getRevenue = async ({ startDate, endDate }) => {
       },
     ]);
 
-    return (
+    return(
       revenue[0] || {
         totalRevenue: 0,
         ordersCount: 0,
