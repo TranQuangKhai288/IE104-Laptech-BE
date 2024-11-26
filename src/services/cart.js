@@ -39,8 +39,21 @@ export const addToCart = async (userId, productId, quantity) => {
 
     let cart = await Cart.findOne({ userId, status: "active" });
 
-    //enter code here
-    
+    if (!cart) {
+      // Create a new cart if none exists
+      cart = new Cart({
+        userId,
+        products: [],
+        totalPrice: 0,
+        status: "active",
+      });
+    }
+
+    // Check if the product already exists in the cart
+    const existingProductIndex = cart.products.findIndex(
+      (item) => item.productId.toString() === productId //Kiểm tra sản phẩm có trong card hay không
+    );
+
     if (existingProductIndex > -1) {
       // Update quantity if the product is already in the cart
       const newQuantity =
