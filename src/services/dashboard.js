@@ -3,6 +3,35 @@ import Order from "../models/order.js";
 import Product from "../models/product.js";
 import User from "../models/user.js";
 
+/**
+ * Lấy doanh thu tổng hợp trong khoảng thời gian.
+ * @param {Object} params - Tham số bao gồm startDate và endDate.
+ * @returns {Object} Doanh thu tổng hợp.
+ */
+export const getRevenue = async ({ startDate, endDate }) => {
+  try {
+    const revenue = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(
+              startDate ||
+                new Date(new Date().setMonth(new Date().getMonth() - 1))
+            ),
+            $lte: new Date(endDate || Date.now()),
+          },
+          status: { $in: ["delivered", "completed"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$total" },
+          ordersCount: { $sum: 1 },
+          averageOrderValue: { $avg: "$total" },
+        },
+      },
+    ]);
 
     return (
       revenue[0] || {
