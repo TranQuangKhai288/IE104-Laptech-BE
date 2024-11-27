@@ -51,7 +51,7 @@ export const addToCart = async (userId, productId, quantity) => {
 
     // Check if the product already exists in the cart
     const existingProductIndex = cart.products.findIndex(
-      (item) => item.productId.toString() === productId
+      (item) => item.productId.toString() === productId //Kiểm tra sản phẩm có trong card hay không
     );
 
     if (existingProductIndex > -1) {
