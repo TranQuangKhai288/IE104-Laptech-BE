@@ -1,12 +1,13 @@
 import Order from "../models/order.js";
 import Product from "../models/product.js";
+import Cart from "../models/cart.js";
 
 export const createOrder = async (orderData, userId) => {
   // Thêm userId parameter
   try {
     // Validate và lấy thông tin products
     const productPromises = orderData.items.map(async (item) => {
-      const product = await Product.findById(item.productId).lean();
+      const product = await Product.findById(item.productId._id).lean();
       if (!product) {
         throw new Error(`Product not found with id: ${item.productId}`);
       }
@@ -65,6 +66,16 @@ export const createOrder = async (orderData, userId) => {
       total: total,
       status: "pending", // Thêm status mặc định nếu cần
     });
+
+    //sau khi tạo order, trừ số lượng sản phẩm trong kho và xoá giỏ hàng
+    //tìm tất cả sản phẩm trong giỏ hàng của user này
+    await Cart.findOneAndUpdate(
+      { userId, status: "active" },
+      {
+        products: [],
+      }
+    );
+    //clear giỏ hàng
 
     return await order.save();
   } catch (error) {

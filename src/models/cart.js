@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import Product from "./product.js";
 const { Schema } = mongoose;
 
 const cartSchema = new Schema(
@@ -55,13 +55,35 @@ cartSchema.index({ userId: 1, status: 1 });
 cartSchema.index({ lastActive: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 }); // Automatically delete after 7 days of inactivity
 
 // Middleware to automatically update totalPrice
-cartSchema.pre("save", function (next) {
-  this.totalPrice = this.products.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-  this.lastActive = new Date();
-  next();
+cartSchema.pre("save", async function (next) {
+  try {
+    // Lấy danh sách các productId từ giỏ hàng
+    const productIds = this.products.map((item) => item.productId);
+
+    // Truy vấn tất cả các sản phẩm trong giỏ hàng một lần
+    const products = await Product.find({ _id: { $in: productIds } }).select(
+      "price"
+    );
+
+    // Tạo một map để nhanh chóng tìm giá của từng sản phẩm
+    const productPriceMap = new Map(
+      products.map((product) => [product._id.toString(), product.price])
+    );
+
+    // Tính tổng giá dựa trên map
+    this.totalPrice = this.products.reduce((total, item) => {
+      const price = productPriceMap.get(item.productId.toString());
+      if (!price) {
+        throw new Error(`Product with ID ${item.productId} not found`);
+      }
+      return total + price * item.quantity;
+    }, 0);
+
+    this.lastActive = new Date(); // Cập nhật thời gian hoạt động gần nhất
+    next();
+  } catch (error) {
+    next(error); // Gửi lỗi tới middleware tiếp theo
+  }
 });
 
 const Cart = mongoose.model("Cart", cartSchema);

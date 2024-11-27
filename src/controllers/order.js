@@ -16,10 +16,8 @@ const createOrder = async (req, res) => {
     const requiredAddressFields = [
       "fullName",
       "phone",
-      "street",
+      "detailAddress",
       "city",
-      "state",
-      "postalCode",
     ];
     const missingFields = requiredAddressFields.filter(
       (field) => !shippingAddress[field]

@@ -40,10 +40,10 @@ const orderSchema = new Schema(
     shippingAddress: {
       fullName: { type: String, required: true },
       phone: { type: String, required: true },
-      street: { type: String, required: true },
+      detailAddress: { type: String, required: true },
       city: { type: String, required: true },
-      state: { type: String, required: true },
-      postalCode: { type: String, required: true },
+      // state: { type: String, required: true },
+      // postalCode: { type: String, required: true },
       country: { type: String, required: true, default: "Vietnam" },
     },
     paymentMethod: {

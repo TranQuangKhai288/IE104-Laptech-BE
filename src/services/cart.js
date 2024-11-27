@@ -69,7 +69,7 @@ export const addToCart = async (userId, productId, quantity) => {
     } else {
       // Add a new product to the cart
       cart.products.push({
-        productId,
+        productId: product._id,
         name: product.name,
         quantity,
         price: product.price,
@@ -79,7 +79,9 @@ export const addToCart = async (userId, productId, quantity) => {
 
     // Automatically update totalPrice through middleware
     await cart.save();
-    return cart;
+    const populatedCart = await cart.populate("products.productId");
+
+    return populatedCart;
   } catch (error) {
     console.error("Service Error - Add to Cart:", error);
     throw error;
@@ -133,9 +135,9 @@ export const removeFromCart = async (userId, productId) => {
       return "Cart not found";
     }
 
-    const productIndex = cart.products.findIndex(
-      (item) => item.productId.toString() === productId
-    );
+    const productIndex = cart.products.findIndex((item) => {
+      return item.productId.toString() === productId.toString();
+    });
 
     if (productIndex === -1) {
       return "Product not found in cart";
@@ -145,7 +147,9 @@ export const removeFromCart = async (userId, productId) => {
 
     // Automatically update totalPrice through middleware
     await cart.save();
-    return cart;
+    const populatedCart = await cart.populate("products.productId");
+
+    return populatedCart;
   } catch (error) {
     console.error("Service Error - Remove From Cart:", error);
     throw error;

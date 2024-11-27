@@ -56,8 +56,6 @@ const productSchema = new Schema(
             "Connectivity",
             "Ports",
             "Audio",
-            "Sensors",
-            "Features",
           ],
         }, // e.g., "CPU", "RAM", etc.
         title: { type: String, required: true }, // Display title for the spec

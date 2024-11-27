@@ -10,15 +10,25 @@ import User from "../models/user.js";
  */
 export const getRevenue = async ({ startDate, endDate }) => {
   try {
-    const revenue = await Order.aggregate([
+    const startDateCurrent = new Date(
+      startDate || new Date(new Date().setMonth(new Date().getMonth() - 1))
+    );
+    const endDateCurrent = new Date(endDate || Date.now());
+
+    const startDatePrevious = new Date(
+      new Date(startDateCurrent).setMonth(startDateCurrent.getMonth() - 1)
+    );
+    const endDatePrevious = new Date(
+      new Date(endDateCurrent).setMonth(endDateCurrent.getMonth() - 1)
+    );
+
+    // Lấy doanh thu cho khoảng thời gian hiện tại
+    const currentRevenue = await Order.aggregate([
       {
         $match: {
           createdAt: {
-            $gte: new Date(
-              startDate ||
-                new Date(new Date().setMonth(new Date().getMonth() - 1))
-            ),
-            $lte: new Date(endDate || Date.now()),
+            $gte: startDateCurrent,
+            $lte: endDateCurrent,
           },
           status: { $in: ["delivered", "completed"] },
         },
@@ -33,13 +43,48 @@ export const getRevenue = async ({ startDate, endDate }) => {
       },
     ]);
 
-    return (
-      revenue[0] || {
-        totalRevenue: 0,
-        ordersCount: 0,
-        averageOrderValue: 0,
-      }
-    );
+    // Lấy doanh thu cho khoảng thời gian trước đó
+    const previousRevenue = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDatePrevious,
+            $lte: endDatePrevious,
+          },
+          status: { $in: ["delivered", "completed"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$total" },
+          ordersCount: { $sum: 1 },
+          averageOrderValue: { $avg: "$total" },
+        },
+      },
+    ]);
+
+    const current = currentRevenue[0] || {
+      totalRevenue: 0,
+      ordersCount: 0,
+      averageOrderValue: 0,
+    };
+    const previous = previousRevenue[0] || {
+      totalRevenue: 0,
+      ordersCount: 0,
+      averageOrderValue: 0,
+    };
+
+    return {
+      current,
+      previous,
+      revenueDifference: {
+        totalRevenue: current.totalRevenue - previous.totalRevenue,
+        ordersCount: current.ordersCount - previous.ordersCount,
+        averageOrderValue:
+          current.averageOrderValue - previous.averageOrderValue,
+      },
+    };
   } catch (error) {
     throw new Error("Lỗi khi tính doanh thu: " + error.message);
   }
@@ -52,13 +97,23 @@ export const getRevenue = async ({ startDate, endDate }) => {
  */
 export const getDailyRevenue = async (days = 30) => {
   try {
-    const dailyRevenue = await Order.aggregate([
+    const today = new Date();
+    const startDateCurrent = new Date(today.setDate(today.getDate() - days));
+    const endDateCurrent = new Date();
+
+    const startDatePrevious = new Date(
+      new Date(startDateCurrent).setDate(startDateCurrent.getDate() - days)
+    );
+    const endDatePrevious = new Date(
+      new Date(endDateCurrent).setDate(endDateCurrent.getDate() - days)
+    );
+
+    // Lấy doanh thu cho khoảng thời gian hiện tại
+    const dailyRevenueCurrent = await Order.aggregate([
       {
         $match: {
           status: { $in: ["delivered", "completed"] },
-          createdAt: {
-            $gte: new Date(new Date().setDate(new Date().getDate() - days)),
-          },
+          createdAt: { $gte: startDateCurrent, $lte: endDateCurrent },
         },
       },
       {
@@ -71,10 +126,59 @@ export const getDailyRevenue = async (days = 30) => {
       { $sort: { _id: 1 } },
     ]);
 
-    return dailyRevenue;
+    // Lấy doanh thu cho khoảng thời gian trước đó
+    const dailyRevenuePrevious = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ["delivered", "completed"] },
+          createdAt: { $gte: startDatePrevious, $lte: endDatePrevious },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          totalRevenue: { $sum: "$total" },
+          ordersCount: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return {
+      current: dailyRevenueCurrent,
+      previous: dailyRevenuePrevious,
+      revenueDifference: calculateRevenueDifference(
+        dailyRevenueCurrent,
+        dailyRevenuePrevious
+      ),
+    };
   } catch (error) {
     throw new Error("Lỗi khi tính doanh thu hàng ngày: " + error.message);
   }
+};
+
+const calculateRevenueDifference = (current, previous) => {
+  const result = [];
+  const currentMap = current.reduce((acc, item) => {
+    acc[item._id] = item;
+    return acc;
+  }, {});
+
+  previous.forEach((item) => {
+    const currentItem = currentMap[item._id];
+    const diff = {
+      date: item._id,
+      revenueDiff: currentItem
+        ? currentItem.totalRevenue - item.totalRevenue
+        : -item.totalRevenue,
+      ordersCountDiff: currentItem
+        ? currentItem.ordersCount - item.ordersCount
+        : -item.ordersCount,
+    };
+    result.push(diff);
+  });
+
+  return result;
 };
 
 /**
@@ -84,17 +188,25 @@ export const getDailyRevenue = async (days = 30) => {
  */
 export const getMonthlyRevenue = async (months = 12) => {
   try {
-    const monthlyRevenue = await Order.aggregate([
+    const today = new Date();
+    const startDateCurrent = new Date(
+      today.setFullYear(today.getFullYear() - Math.floor(months / 12))
+    );
+    const endDateCurrent = new Date();
+
+    const startDatePrevious = new Date(
+      new Date(startDateCurrent).setMonth(startDateCurrent.getMonth() - months)
+    );
+    const endDatePrevious = new Date(
+      new Date(endDateCurrent).setMonth(endDateCurrent.getMonth() - months)
+    );
+
+    // Lấy doanh thu cho khoảng thời gian hiện tại
+    const monthlyRevenueCurrent = await Order.aggregate([
       {
         $match: {
           status: { $in: ["delivered", "completed"] },
-          createdAt: {
-            $gte: new Date(
-              new Date().setFullYear(
-                new Date().getFullYear() - Math.floor(months / 12)
-              )
-            ),
-          },
+          createdAt: { $gte: startDateCurrent, $lte: endDateCurrent },
         },
       },
       {
@@ -107,7 +219,32 @@ export const getMonthlyRevenue = async (months = 12) => {
       { $sort: { _id: 1 } },
     ]);
 
-    return monthlyRevenue;
+    // Lấy doanh thu cho khoảng thời gian trước đó
+    const monthlyRevenuePrevious = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ["delivered", "completed"] },
+          createdAt: { $gte: startDatePrevious, $lte: endDatePrevious },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          totalRevenue: { $sum: "$total" },
+          ordersCount: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return {
+      current: monthlyRevenueCurrent,
+      previous: monthlyRevenuePrevious,
+      revenueDifference: calculateRevenueDifference(
+        monthlyRevenueCurrent,
+        monthlyRevenuePrevious
+      ),
+    };
   } catch (error) {
     throw new Error("Lỗi khi tính doanh thu hàng tháng: " + error.message);
   }
@@ -302,6 +439,7 @@ export const getTopBuyingCustomers = async () => {
           customerId: "$customer._id",
           name: "$customer.name",
           email: "$customer.email",
+          avatar: "$customer.avatar",
           totalSpent: 1,
         },
       },
