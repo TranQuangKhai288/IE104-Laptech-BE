@@ -188,7 +188,7 @@ export const updateProduct = async (id, productData) => {
         .map((err) => err.message)
         .join(", ");
     }
-    throw error;
+    throw error; //
   }
 };
 
