@@ -29,7 +29,7 @@ const productSchema = new Schema(
     },
     brand: { type: String, required: true },
     price: { type: Number, required: true }, // Original or base price
-    starting_price: { type: String }, // Price after sale, as string for format flexibility
+    starting_price: { type: Number }, // Price after sale, as string for format flexibility
     sale_percentage: { type: Number, default: 0 }, // Sale discount percentage
     stock: { type: Number, required: true },
     images: [{ type: String, required: true }], // Array of image URLs

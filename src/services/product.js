@@ -16,6 +16,7 @@ export const createProduct = async (productData) => {
     if (productData.category === "laptop" && !productData.subCategory) {
       return "subCategory is required for laptop products";
     }
+    console.log(productData);
 
     // Create new product
     const product = new Product(productData);

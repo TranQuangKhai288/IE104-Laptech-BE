@@ -13,8 +13,8 @@ router.post("/log-out", userController.logoutUser);
 
 router.put("/", authUserMiddleWare, userController.updateUser);
 router.delete("/:id", authAdminMiddleWare, userController.deleteUser);
-router.get("/", authAdminMiddleWare, userController.getUsers);
-router.get("/:id", authUserMiddleWare, userController.getDetailsUser);
+router.get("/get-all", authAdminMiddleWare, userController.getUsers);
+router.get("/", authUserMiddleWare, userController.getDetailsUser);
 
 router.post("/refresh-token", userController.refreshToken);
 
