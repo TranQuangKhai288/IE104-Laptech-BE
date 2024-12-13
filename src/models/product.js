@@ -28,15 +28,15 @@ const productSchema = new Schema(
       },
     },
     brand: { type: String, required: true },
-    price: { type: Number, required: true }, // Original or base price
-    starting_price: { type: Number }, // Price after sale, as string for format flexibility
-    sale_percentage: { type: Number, default: 0 }, // Sale discount percentage
+    price: { type: Number, required: true },
+    starting_price: { type: Number },
+    sale_percentage: { type: Number, default: 0 },
     stock: { type: Number, required: true },
-    images: [{ type: String, required: true }], // Array of image URLs
+    images: [{ type: String, required: true }],
     colors: [
       {
-        title: { type: String, required: true }, // Color name
-        hex: { type: String, required: true }, // Hex code for the color
+        title: { type: String, required: true },
+        hex: { type: String, required: true },
       },
     ],
     specifications: [
@@ -57,27 +57,18 @@ const productSchema = new Schema(
             "Ports",
             "Audio",
           ],
-        }, // e.g., "CPU", "RAM", etc.
-        title: { type: String, required: true }, // Display title for the spec
-        description: { type: String, required: true }, // Details of the spec
+        },
+        title: { type: String, required: true },
+        description: { type: String, required: true },
       },
     ],
-    gift_value: { type: String, default: "" }, // Gift value if applicable
-    reviews: [
-      {
-        userId: { type: Schema.Types.ObjectId, ref: "User" },
-        rating: { type: Number, min: 1, max: 5 },
-        comment: { type: String },
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
-    averageRating: { type: Number, default: 0 },
-    isFeatured: { type: Boolean, default: false }, // If the product is featured
+    gift_value: { type: String, default: "" },
+    averageRating: { type: Number, default: 0 }, // Điểm đánh giá trung bình
+    isFeatured: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-// For search functionality
 productSchema.index({ name: "text", brand: "text", category: "text" });
 
 const Product = mongoose.model("Product", productSchema);

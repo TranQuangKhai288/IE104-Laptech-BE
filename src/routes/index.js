@@ -2,6 +2,8 @@ import UserRouter from "./UserRouter.js";
 import ProductRouter from "./ProductRouter.js";
 import CartRouter from "./CartRouter.js";
 import OrderRouter from "./OrderRouter.js";
+import ReviewRouter from "./Review.js";
+
 import DashboardAnalyticsRouter from "./DashboardAnalyticsRouter.js";
 
 const routes = (app) => {
@@ -9,6 +11,7 @@ const routes = (app) => {
   app.use("/api/product", ProductRouter);
   app.use("/api/cart", CartRouter);
   app.use("/api/order", OrderRouter);
+  app.use("/api/review", ReviewRouter);
   app.use("/api/dashboard", DashboardAnalyticsRouter);
 };
 

@@ -1,4 +1,5 @@
 import Product from "../models/product.js";
+import Review from "../models/review.js";
 
 export const createProduct = async (productData) => {
   try {
@@ -73,7 +74,7 @@ export const getProducts = async (filters = {}, page = 1, limit = 10) => {
     }
 
     // Apply sorting
-    let sortOptions = { updatedAt: -1 };
+    let sortOptions = { createdAt: -1 };
     if (filters.sort) {
       switch (filters.sort) {
         case "price-asc":
@@ -103,6 +104,7 @@ export const getProducts = async (filters = {}, page = 1, limit = 10) => {
         .populate({
           path: "reviews.userId",
           select: "name email",
+          strictPopulate: false, // Thêm tùy chọn này
         })
         .sort(sortOptions)
         .skip(skip)
@@ -137,16 +139,20 @@ export const getAllCategory = async () => {
 
 export const getProductById = async (id) => {
   try {
-    const product = await Product.findById(id).populate({
-      path: "reviews.userId",
-      select: "name email",
-    });
+    const product = await Product.findById(id);
 
     if (!product) {
       return "Product not found";
     }
 
-    return product;
+    const reviews = await Review.find({ productId: id }).populate(
+      "userId",
+      "name email avatar"
+    );
+
+    const productWithReviews = { ...product._doc, reviews };
+
+    return productWithReviews;
   } catch (error) {
     console.error("Service Error - Get Product by ID:", error);
     throw error;
