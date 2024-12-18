@@ -32,7 +32,7 @@ export const createUser = async (newUser) => {
 
 export const loginUser = async (userLogin) => {
   const { email, password } = userLogin;
-
+  console.log(email, password);
   try {
     const checkUser = await User.findOne({ email });
     if (!checkUser) {

@@ -17,12 +17,12 @@ export const validateProductInput = (data, isUpdate = false) => {
   }
 
   const validCategories = [
-    "laptop",
-    "pc",
-    "phone",
-    "accessory",
-    "tablet",
-    "other",
+    "Laptop",
+    "Pc",
+    "Phone",
+    "Accessory",
+    "Tablet",
+    "Other",
   ];
   if (category && !validCategories.includes(category)) {
     errors.category = `Category must be one of: ${validCategories.join(", ")}`;

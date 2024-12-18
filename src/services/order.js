@@ -73,6 +73,7 @@ export const createOrder = async (orderData, userId) => {
       { userId, status: "active" },
       {
         products: [],
+        totalPrice: 0,
       }
     );
     //clear giỏ hàng
@@ -95,7 +96,8 @@ export const getUserOrders = async (userId, query = {}) => {
     const orders = await Order.find(findQuery)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate("userId", "_id avatar name email phone");
 
     const total = await Order.countDocuments(findQuery);
 

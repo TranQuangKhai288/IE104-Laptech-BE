@@ -57,9 +57,15 @@ export const getProducts = async (filters = {}, page = 1, limit = 10) => {
     let query = {};
 
     // Apply filters
-    if (filters.category) query.category = filters.category;
-    if (filters.subCategory) query.subCategory = filters.subCategory;
-    if (filters.brand) query.brand = filters.brand;
+    if (filters.category) {
+      query = { category: { $regex: filters.category, $options: "i" } };
+    }
+    if (filters.subCategory) {
+      query = { subCategory: { $regex: filters.subCategory, $options: "i" } };
+    }
+    if (filters.brand) {
+      query = { brand: { $regex: filters.brand, $options: "i" } };
+    }
     if (filters.price) query.price = filters.price;
 
     // Handle text search

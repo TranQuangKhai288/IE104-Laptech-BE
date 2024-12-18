@@ -85,11 +85,11 @@ const loginUser = async (req, res) => {
     // }
 
     // 3. Sanitize input
-    const sanitizedEmail = email.toLowerCase().trim();
+    // const sanitizedEmail = email.toLowerCase().trim();
 
     // 4. Call service with sanitized input
     const response = await userService.loginUser({
-      email: sanitizedEmail,
+      email: email,
       password,
     });
 
@@ -209,6 +209,8 @@ const deleteUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
+    const { search, page = 1, limit = 10 } = req.query;
+
     const keyword = req.query.search
       ? {
           $or: [
@@ -218,8 +220,21 @@ const getUsers = async (req, res) => {
         }
       : {};
 
-    const users = await User.find(keyword);
-    return res.status(200).json(users);
+    const users = await User.find({ ...keyword })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const count = await User.countDocuments({ ...keyword });
+
+    return res.status(200).json({
+      status: "OK",
+      message: "SUCCESS",
+      data: users,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalItems: count,
+    });
   } catch (error) {
     return res.status(500).json({
       message: error.message,

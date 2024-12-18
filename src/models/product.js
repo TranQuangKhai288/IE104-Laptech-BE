@@ -8,29 +8,29 @@ const productSchema = new Schema(
     description: { type: String, required: true },
     category: {
       type: String,
-      enum: ["laptop", "pc", "phone", "accessory", "tablet", "other"],
+      enum: ["Laptop", "Pc", "Phone", "Accessory", "Tablet", "Other"],
       required: true,
     },
     subCategory: {
       type: String,
       enum: [
-        "gaming",
-        "office",
-        "ultra-thin",
+        "Gaming",
+        "Office",
+        "Ultrabook",
         "2-in-1",
-        "workstation",
-        "budget",
-        "student",
-        "business",
+        "Workstation",
+        "Budget",
+        "Student",
+        "Business",
       ],
       required: function () {
-        return this.category === "laptop";
+        return this.category === "Laptop";
       },
     },
     brand: { type: String, required: true },
     price: { type: Number, required: true },
     starting_price: { type: Number },
-    sale_percentage: { type: Number, default: 0 },
+    // sale_percentage: { type: Number, default: 0 },
     stock: { type: Number, required: true },
     images: [{ type: String, required: true }],
     colors: [
