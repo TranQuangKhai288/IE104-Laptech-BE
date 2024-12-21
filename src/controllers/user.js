@@ -1,6 +1,48 @@
 import * as userService from "../services/user.js";
 import * as JwtService from "../services/JwtService.js";
 import User from "../models/user.js";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+const emailVerificationTokens = {};
+import { sendEmail } from "../services/emailService.js";
+const verifyEmail = async (req, res) => {
+  try {
+    const { token, name, email, password } = req.query;
+
+    // Kiểm tra token
+    if (
+      !emailVerificationTokens[email] ||
+      emailVerificationTokens[email] !== token
+    ) {
+      return res.status(400).json({
+        status: "ERR",
+        message: "Invalid or expired verification token.",
+      });
+    }
+
+    // Token hợp lệ => Xóa token
+    delete emailVerificationTokens[email];
+
+    // Chuyển sang tạo user
+    const user = await userService.createUser({
+      name,
+      email,
+      password,
+    });
+
+    return res.status(201).json({
+      status: "OK",
+      message: "Email verified and user created successfully.",
+      data: user,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      status: "ERR",
+      message: "An error occurred during email verification.",
+    });
+  }
+};
 
 const createUser = async (req, res) => {
   try {
@@ -28,29 +70,62 @@ const createUser = async (req, res) => {
       });
     }
 
-    const response = await userService.createUser(req.body);
-    if (response === "Email is already existed") {
+    const checkUser = await userService.checkUser(email);
+    if (checkUser) {
       return res.status(400).json({
         status: "ERR",
         message: "Email is already existed",
       });
     }
+    const token = crypto.randomBytes(32).toString("hex");
+    emailVerificationTokens[email] = token; // Lưu token tạm thời
 
-    if (response === "Error when create user") {
-      return res.status(400).json({
+    // const response = await userService.createUser(req.body);
+    // if (response === "Email is already existed") {
+    //   return res.status(400).json({
+    //     status: "ERR",
+    //     message: "Email is already existed",
+    //   });
+    // }
+    const verifyUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/user/verify-email?token=${token}&email=${email}&password=${password}&name=${name}`;
+    const sent = await sendEmail({
+      to: email,
+      subject: "Email Verification for Laptech",
+      text: "",
+      html: `Hi ${name}, Thank you for registering. Please verify your email by clicking the link below: <a href="${verifyUrl}">Verify Email</a>`,
+    });
+
+    if (sent) {
+      return res.status(200).json({
+        status: "OK",
+        message: "Email sent successfully",
+      });
+    } else {
+      return res.status(200).json({
         status: "ERR",
-        message: "Error when create user",
+        message: "Error when sending email",
       });
     }
 
-    return res.status(201).json({
-      status: "OK",
-      message: "SUCCESS",
-      data: response,
-    });
+    // if (response === "Error when create user") {
+    //   return res.status(400).json({
+    //     status: "ERR",
+    //     message: "Error when create user",
+    //   });
+    // }
+
+    // return res.status(201).json({
+    //   status: "OK",
+    //   message: "SUCCESS",
+    //   data: response,
+    // });
   } catch (e) {
+    console.error(e);
     return res.status(500).json({
-      message: e.message,
+      status: "ERR",
+      message: "An error occurred while sending the verification email.",
     });
   }
 };
@@ -324,7 +399,48 @@ const getAllUser = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  console.log("email", email);
+
+  if (!email) {
+    return res.status(200).json({ message: "Email is required" });
+  }
+
+  try {
+    // Kiểm tra xem email đã đăng ký hay chưa
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({ message: "Email is not registered" });
+    }
+
+    // Tạo mật khẩu mới ngẫu nhiên
+    const newPassword = crypto.randomBytes(4).toString("hex");
+
+    // Mã hóa mật khẩu mới và lưu vào database
+    user.password = bcrypt.hashSync(newPassword, 10); // Mã hóa mật khẩu mới
+    await user.save();
+
+    // Gửi email với mật khẩu mới
+    await sendEmail({
+      to: email,
+      subject: "Reset Password",
+      text: `Your new password is: ${newPassword}`,
+    });
+
+    return res.status(200).json({
+      status: "OK",
+      message: "Password has been reset. Please check your email.",
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ status: "ERR", message: "Internal server error" });
+  }
+};
+
 export default {
+  verifyEmail,
+  forgotPassword,
   createUser,
   loginUser,
   updateUser,

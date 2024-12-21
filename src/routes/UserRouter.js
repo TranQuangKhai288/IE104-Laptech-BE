@@ -6,6 +6,9 @@ import {
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+router.get("/verify-email", userController.verifyEmail);
+router.post("/refresh-token", userController.refreshToken);
+// router.post("/forgot-password", userController.forgotPassword);
 
 router.post("/register", userController.createUser);
 router.post("/login", userController.loginUser);
@@ -15,7 +18,5 @@ router.put("/", authUserMiddleWare, userController.updateUser);
 router.delete("/:id", authAdminMiddleWare, userController.deleteUser);
 router.get("/all", authAdminMiddleWare, userController.getUsers);
 router.get("/", authUserMiddleWare, userController.getDetailsUser);
-
-router.post("/refresh-token", userController.refreshToken);
 
 export default router;

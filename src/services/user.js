@@ -30,6 +30,16 @@ export const createUser = async (newUser) => {
   }
 };
 
+export const checkUser = async (email) => {
+  try {
+    const user = await User.findOne({ email });
+    return !!user;
+  } catch (e) {
+    console.error(e);
+    throw new Error("Error when checking user existence");
+  }
+};
+
 export const loginUser = async (userLogin) => {
   const { email, password } = userLogin;
   console.log(email, password);
