@@ -8,7 +8,7 @@ import {
 const router = express.Router();
 router.get("/verify-email", userController.verifyEmail);
 router.post("/refresh-token", userController.refreshToken);
-// router.post("/forgot-password", userController.forgotPassword);
+router.post("/forgot-password", userController.forgotPassword);
 
 router.post("/register", userController.createUser);
 router.post("/login", userController.loginUser);
