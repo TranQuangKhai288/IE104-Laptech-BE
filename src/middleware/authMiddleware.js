@@ -29,7 +29,8 @@ export const authAdminMiddleWare = async (req, res, next) => {
     if (user?.isAdmin) {
       const setUser = await User.findOne({ _id: user.id });
       if (!setUser) {
-        throw new Error("User not found");
+        console.log("User not found");
+        // throw new Error("User not found");
       }
       req.user = setUser; // Set req.user
       next();
