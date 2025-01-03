@@ -107,18 +107,22 @@ export const getProducts = async (filters = {}, page = 1, limit = 10) => {
       const skip = (page - 1) * limit;
       const totalProducts = await Product.countDocuments(query);
       const products = await Product.find(query)
-        .populate({
-          path: "reviews.userId",
-          select: "name email",
-          strictPopulate: false, // Thêm tùy chọn này
-        })
         .sort(sortOptions)
         .skip(skip)
         .limit(limit);
 
+      // Fetch reviews for each product
+      const productsWithReviews = await Promise.all(
+        products.map(async (product) => {
+          const reviews = await Review.find({
+            productId: product._id,
+          }).populate("userId", "name email avatar");
+          return { ...product._doc, reviews };
+        })
+      );
       const totalPages = Math.ceil(totalProducts / limit);
 
-      return { data: products, count: totalProducts, totalPages };
+      return { data: productsWithReviews, count: totalProducts, totalPages };
     }
   } catch (error) {
     console.error("Service Error - Get Products:", error);

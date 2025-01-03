@@ -40,40 +40,58 @@ mongoose
     console.error("MongoDB connection error:", err);
   });
 
-async function updateProducts() {
-  try {
-    // Cập nhật tất cả sản phẩm với aggregation pipeline
-    const result = await Product.updateMany(
-      {}, // Điều kiện tìm kiếm (ở đây là tìm tất cả sản phẩm)
-      [
-        {
-          $set: {
-            category: {
-              $concat: [
-                { $toUpper: { $substrCP: ["$category", 0, 1] } }, // Chữ cái đầu viết hoa
-                { $substrCP: ["$category", 1, { $strLenCP: "$category" }] }, // Phần còn lại
-              ],
-            },
-            //update subcategory
-            subCategory: {
-              //chuyển thành viết hoa chữ cái đầu
-              $concat: [
-                { $toUpper: { $substrCP: ["$subCategory", 0, 1] } },
-                {
-                  $substrCP: ["$subCategory", 1, { $strLenCP: "$subCategory" }],
-                },
-              ],
-            },
-          },
-        },
-      ]
-    );
+// async function updateProducts() {
+//   try {
+//     // Cập nhật tất cả sản phẩm với aggregation pipeline
+//     const result = await Product.updateMany(
+//       {}, // Điều kiện tìm kiếm (ở đây là tìm tất cả sản phẩm)
+//       [
+//         {
+//           $set: {
+//             category: {
+//               $concat: [
+//                 { $toUpper: { $substrCP: ["$category", 0, 1] } }, // Chữ cái đầu viết hoa
+//                 { $substrCP: ["$category", 1, { $strLenCP: "$category" }] }, // Phần còn lại
+//               ],
+//             },
+//             //update subcategory
+//             // subCategory: {
+//             //   //chuyển thành viết hoa chữ cái đầu
+//             //   $concat: [
+//             //     { $toUpper: { $substrCP: ["$subCategory", 0, 1] } },
+//             //     {
+//             //       $substrCP: ["$subCategory", 1, { $strLenCP: "$subCategory" }],
+//             //     },
+//             //   ],
+//             // },
+//           },
+//         },
+//       ]
+//     );
 
-    console.log(`Đã cập nhật ${result.modifiedCount} sản phẩm.`);
-  } catch (error) {
-    console.error("Lỗi khi cập nhật sản phẩm:", error);
-  }
-}
+//     console.log(`Đã cập nhật ${result.modifiedCount} sản phẩm.`);
+//   } catch (error) {
+//     console.error("Lỗi khi cập nhật sản phẩm:", error);
+//   }
+// }
+
+// async function updateProducts() {
+//   try {
+//     // Cập nhật tất cả sản phẩm để đặt `averageRating` về 0
+//     const result = await Product.updateMany(
+//       {}, // Điều kiện: Tất cả sản phẩm
+//       {
+//         $set: { averageRating: 0 }, // Đặt giá trị `averageRating` về 0
+//       }
+//     );
+
+//     console.log(
+//       `Đã cập nhật ${result.modifiedCount} sản phẩm với averageRating = 0.`
+//     );
+//   } catch (error) {
+//     console.error("Lỗi khi cập nhật sản phẩm:", error);
+//   }
+// }
 
 // // Gọi hàm cập nhật
 // updateProducts();
